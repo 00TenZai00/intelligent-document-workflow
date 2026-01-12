@@ -34,7 +34,7 @@ public class SignatureService {
     @Transactional
     public void requestOtp(Long documentId, Long signerId) {
 
-        Document document = validateSignerAndState(documentId, signerId);
+        validateSignerAndState(documentId, signerId);
 
         otpService.generateAndSendOtp(documentId, signerId);
 
@@ -43,19 +43,17 @@ public class SignatureService {
 
     /**
      * Verify OTP and sign the document.
+     * Step 1: Verify OTP
+     * Step 2: Compute document hash
+     * Step 3: Persist signature
      */
     @Transactional
     public void signDocument(Long documentId, Long signerId, String otp) {
 
         Document document = validateSignerAndState(documentId, signerId);
-
-        // Step 1: Verify OTP
         otpService.verifyOtp(documentId, signerId, otp);
-
-        // Step 2: Compute document hash
         String documentHash = computeHash(document.getContent());
 
-        // Step 3: Persist signature
         User signer = userRepository.findById(signerId)
                 .orElseThrow(() -> new IllegalArgumentException("Signer not found"));
 
@@ -67,15 +65,10 @@ public class SignatureService {
                 .build();
 
         signatureRepository.save(signature);
-
-        // Step 4: Update document
         document.setDocumentHash(documentHash);
         documentService.markDocumentAsSigned(documentId);
 
-        // Step 5: Audit log
         auditService.logAction(signerId, "SIGN_DOCUMENT", documentId);
-
-        // Step 6: Async confirmation notification
         asyncJobProducer.enqueueSignConfirmation(documentId);
     }
 

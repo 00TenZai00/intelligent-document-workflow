@@ -1,10 +1,13 @@
 package com.innovinlabs.documentworkflow.service;
 
 
+import com.innovinlabs.documentworkflow.Exception.GeminiServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 
@@ -48,8 +51,13 @@ public class GeminiClient {
 
             return extractText(response.getBody());
 
+        } catch (HttpStatusCodeException e) {
+            throw new GeminiServiceException("Gemini API returned " + e.getStatusCode() + ": " + e.getResponseBodyAsString(), e);
+        } catch (ResourceAccessException e) {
+            throw new GeminiServiceException("Gemini API is unreachable or timed out", e);
         } catch (Exception e) {
-            throw new RuntimeException("Gemini API call failed", e);
+            // Fallback for unexpected logic errors
+            throw new GeminiServiceException("Unexpected error during Gemini summarization", e);
         }
     }
 

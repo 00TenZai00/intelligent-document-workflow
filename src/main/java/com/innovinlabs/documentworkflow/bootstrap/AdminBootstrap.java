@@ -4,12 +4,15 @@ import com.innovinlabs.documentworkflow.entity.User;
 import com.innovinlabs.documentworkflow.entity.UserRole;
 import com.innovinlabs.documentworkflow.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AdminBootstrap implements ApplicationRunner {
@@ -41,6 +44,6 @@ public class AdminBootstrap implements ApplicationRunner {
 
         userRepository.save(admin);
 
-        System.out.println("Admin account provisioned: " + email);
+        log.info("Admin account provisioned: {}", email);
     }
 }

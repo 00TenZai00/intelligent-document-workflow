@@ -24,7 +24,6 @@ public class AuditService {
 
     /**
      * Record an audit log entry for a security-sensitive action.
-     * This method is intended to be called from within an existing transaction.
      */
     @Transactional
     public void logAction(Long userId, String action, Long documentId) {

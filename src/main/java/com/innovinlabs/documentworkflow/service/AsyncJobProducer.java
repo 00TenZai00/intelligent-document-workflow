@@ -1,10 +1,12 @@
 package com.innovinlabs.documentworkflow.service;
 
 
-import com.innovinlabs.documentworkflow.entity.AsyncJob;
-import com.innovinlabs.documentworkflow.entity.JobStatus;
-import com.innovinlabs.documentworkflow.entity.JobType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innovinlabs.documentworkflow.entity.*;
 import com.innovinlabs.documentworkflow.repository.AsyncJobRepository;
+import com.innovinlabs.documentworkflow.repository.DocumentRepository;
+import com.innovinlabs.documentworkflow.repository.UserRepository;
+import com.innovinlabs.documentworkflow.service.dto.SignatureJobPayload;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,9 @@ import java.time.Instant;
 public class AsyncJobProducer {
 
     private final AsyncJobRepository asyncJobRepository;
+    private final ObjectMapper objectMapper;
+    private final DocumentRepository documentRepository;
+    private final UserRepository userRepository;
 
     /**
      * Enqueue signature request notification job.
@@ -23,23 +28,49 @@ public class AsyncJobProducer {
      */
     @Transactional
     public void enqueueSignatureRequest(Long documentId) {
+
+        Document doc = documentRepository.findById(documentId)
+                .orElseThrow();
+
+        User signer = userRepository.findById(doc.getSigner().getId()).orElseThrow();
+        User owner = userRepository.findById(doc.getOwner().getId()).orElseThrow();
+
+        SignatureJobPayload payload = new SignatureJobPayload(
+                doc.getId(),
+                doc.getTitle(),
+                signer.getEmail(),
+                owner.getEmail()
+        );
+
         enqueueJob(
                 JobType.SIGN_REQUEST,
                 documentId,
-                null,
+                toJson(payload),
                 Instant.now()
         );
     }
 
     /**
-     * Enqueue reminder job with delay (e.g., 24 hours).
+     * Enqueue reminder job with delay
      */
     @Transactional
     public void enqueueReminder(Long documentId, Instant triggerTime) {
+
+        Document doc = documentRepository.findById(documentId).orElseThrow();
+        User signer = userRepository.findById(doc.getSigner().getId()).orElseThrow();
+        User owner = userRepository.findById(doc.getOwner().getId()).orElseThrow();
+
+        SignatureJobPayload payload = new SignatureJobPayload(
+                doc.getId(),
+                doc.getTitle(),
+                signer.getEmail(),
+                owner.getEmail()
+        );
+
         enqueueJob(
                 JobType.REMINDER,
                 documentId,
-                null,
+                toJson(payload),
                 triggerTime
         );
     }
@@ -49,10 +80,22 @@ public class AsyncJobProducer {
      */
     @Transactional
     public void enqueueSignConfirmation(Long documentId) {
+
+        Document doc = documentRepository.findById(documentId).orElseThrow();
+        User signer = userRepository.findById(doc.getSigner().getId()).orElseThrow();
+        User owner = userRepository.findById(doc.getOwner().getId()).orElseThrow();
+
+        SignatureJobPayload payload = new SignatureJobPayload(
+                doc.getId(),
+                doc.getTitle(),
+                signer.getEmail(),
+                owner.getEmail()
+        );
+
         enqueueJob(
                 JobType.NOTIFICATION,
                 documentId,
-                null,
+                toJson(payload),
                 Instant.now()
         );
     }
@@ -81,4 +124,14 @@ public class AsyncJobProducer {
 
         asyncJobRepository.save(job);
     }
+
+    /** Serialize payload to JSON string */
+    private String toJson(Object o) {
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to serialize payload", e);
+        }
+    }
+
 }

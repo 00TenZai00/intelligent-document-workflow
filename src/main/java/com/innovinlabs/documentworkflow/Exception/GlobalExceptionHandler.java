@@ -1,4 +1,4 @@
-package com.innovinlabs.documentworkflow.api.controller;
+package com.innovinlabs.documentworkflow.Exception;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,6 +15,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity.status(409).body(ex.getMessage());
+    }
+    @ExceptionHandler(JobExecutionException.class)
+    public ResponseEntity<JobExecutionException> handleJobExecutionException(JobExecutionException ex) {
+        return ResponseEntity.status(500).body(ex);
+    }
+    @ExceptionHandler(SerializationException.class)
+    public ResponseEntity<SerializationException> handleSerializationException(SerializationException ex) {
+        return ResponseEntity.status(500).body(ex);
     }
 }
 

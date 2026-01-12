@@ -1,6 +1,8 @@
 package com.innovinlabs.documentworkflow.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innovinlabs.documentworkflow.Exception.SerializationException;
 import com.innovinlabs.documentworkflow.entity.AsyncJob;
 import com.innovinlabs.documentworkflow.entity.JobStatus;
 import com.innovinlabs.documentworkflow.repository.AsyncJobRepository;
@@ -11,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 
@@ -48,17 +51,21 @@ public class AsyncJobWorker {
     }
 
     private void process(AsyncJob job) {
-        try {
-            SignatureJobPayload payload =
-                    objectMapper.readValue(job.getPayload(), SignatureJobPayload.class);
+        SignatureJobPayload payload;
 
+        try {payload = objectMapper.readValue(job.getPayload(), SignatureJobPayload.class);
+        } catch (JsonProcessingException e) {
+            throw new UncheckedIOException("Permanent data error in job " + job.getId(), e);
+        }
+
+        try {
             switch (job.getJobType()) {
                 case SIGN_REQUEST -> notificationService.sendSignatureRequest(payload);
                 case REMINDER -> notificationService.sendReminder(payload);
                 case NOTIFICATION -> notificationService.sendConfirmation(payload);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to process async job " + job.getId(), e);
+            throw new SerializationException("Failed to process async job " + job.getId(), e);
         }
     }
 

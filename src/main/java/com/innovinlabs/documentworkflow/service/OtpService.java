@@ -57,7 +57,7 @@ public class OtpService {
 
 
         String rawOtp = generateOtp();
-        String hashedOtp = passwordEncoder.encode(rawOtp);//"hashed_" + rawOtp; // Placeholder for hashing
+        String hashedOtp = passwordEncoder.encode(rawOtp);
 
         SignatureOtp otp = SignatureOtp.builder()
                 .document(document)
@@ -92,7 +92,7 @@ public class OtpService {
             throw new IllegalStateException("Maximum OTP attempts exceeded");
         }
 
-        if (!passwordEncoder.matches(providedOtp, otp.getOtpHash()))/* if (!("hashed_" + providedOtp).equals(otp.getOtpHash()))*/ {
+        if (!passwordEncoder.matches(providedOtp, otp.getOtpHash())){
             otp.setAttemptCount(otp.getAttemptCount() + 1);
             throw new IllegalArgumentException("Invalid OTP");
         }
